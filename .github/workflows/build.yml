@@ -1049,8 +1049,8 @@ jobs:
           wget -q "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/ntsync_base.patch"
           wget -q "https://raw.githubusercontent.com/Goldzxcbug/Droidspaces_Kernel_patch/refs/heads/main/NTsync/${NTSYNC_PATCH}.patch"
 
-          patch -p1 -N < "ntsync_base.patch"
-          patch -p1 -N < "${NTSYNC_PATCH}.patch"
+          patch -p1 --batch --skip < "ntsync_base.patch" || echo "基础补丁已应用或跳过"
+          patch -p1 --batch --skip < "${NTSYNC_PATCH}.patch" || echo "特定补丁已应用或跳过"
 
           cd ..
 
