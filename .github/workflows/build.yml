@@ -466,12 +466,15 @@ jobs:
                 # 未指定 commit，使用原有方式（完全兼容）
                 curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
               else
-                # 指定了 commit，使用 git clone + checkout
-                echo "使用指定 commit: $KSU_COMMIT"
-                git clone https://github.com/tiann/KernelSU.git
-                cd KernelSU
-                git checkout $KSU_COMMIT
-                cd ..
+                 # 指定了 commit：克隆指定版本的 KernelSU
+                  echo "使用指定 commit: $KSU_COMMIT"
+                  git clone https://github.com/tiann/KernelSU.git
+                  cd KernelSU
+                  git checkout $KSU_COMMIT
+                  cd ..
+                  
+                  # 执行该版本自带的 setup.sh
+                  bash KernelSU/kernel/setup.sh $BRANCH
               fi
               
               # 统一处理版本号（原有逻辑，保持不变）
