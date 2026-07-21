@@ -1021,7 +1021,14 @@ jobs:
 
           if [[ "${{ inputs.android_version }}" == "android15" && "${{ inputs.kernel_version }}" == "6.6" ]]; then
             # 1. 开启用户命名空间（必须）
-            # enable_config_if_defined CONFIG_USER_NS
+            enable_config_if_defined CONFIG_USER_NS
+            # 2. 关闭安卓严格网络控制（必须）
+            disable_config CONFIG_ANDROID_PARANOID_NETWORK
+          fi
+
+          if [[ "${{ inputs.android_version }}" == "android16" && "${{ inputs.kernel_version }}" == "6.12" ]]; then
+            # 1. 开启用户命名空间（必须）
+            enable_config_if_defined CONFIG_USER_NS
             # 2. 关闭安卓严格网络控制（必须）
             disable_config CONFIG_ANDROID_PARANOID_NETWORK
           fi
@@ -1070,39 +1077,14 @@ jobs:
           CONFIG_PATH="./common/arch/arm64/configs/gki_defconfig"
           echo "正在检查并启用 CONFIG_NTSYNC..."
 
-          # 定义配置数组（启用Droidspaces所需配置）
-          CONFIGS=(
-            "CONFIG_NTSYNC"
-            "CONFIG_USER_NS"
-            "CONFIG_SYSVIPC"
-            "CONFIG_POSIX_MQUEUE"
-            "CONFIG_IPC_NS"
-            "CONFIG_PID_NS"
-            "CONFIG_DEVTMPFS"
-            "CONFIG_NETFILTER_XT_TARGET_REJECT"
-            "CONFIG_NETFILTER_XT_TARGET_LOG"
-            "CONFIG_NETFILTER_XT_MATCH_RECENT"
-            "CONFIG_IP_SET"
-            "CONFIG_IP_SET_HASH_IP"
-            "CONFIG_IP_SET_HASH_NET"
-            "CONFIG_NETFILTER_XT_SET"
-            "CONFIG_NETFILTER_XT_MATCH_ADDRTYPE"
-          )
-          
-          # 批量移除禁用标记
-          for config in "${CONFIGS[@]}"; do
-            sed -i "/${config} is not set/d" "$CONFIG_PATH"
-          done
-          
-          # 批量启用
-          for config in "${CONFIGS[@]}"; do
-            if ! grep -q "^${config}=y" "$CONFIG_PATH"; then
-              echo "${config}=y" >> "$CONFIG_PATH"
-              echo "✅ 已启用 ${config}"
-            else
-              echo "✅ ${config} 已启用"
-            fi
-          done
+          # 移除未启用标记，再追加启用项，保证重复运行时保持幂等。
+          sed -i '/CONFIG_NTSYNC is not set/d' "$CONFIG_PATH"
+          if ! grep -q "^CONFIG_NTSYNC=y" "$CONFIG_PATH"; then
+            echo "CONFIG_NTSYNC=y" >> "$CONFIG_PATH"
+            echo "✅ 已成功启用 CONFIG_NTSYNC"
+          else
+            echo "✅ CONFIG_NTSYNC 已处于启用状态"
+          fi
 
           echo "=== NTSync 补丁与配置注入完成 ==="
 
