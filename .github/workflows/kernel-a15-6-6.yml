@@ -28,11 +28,6 @@ on:
         description: "自定义版本名 (可选)"
         required: false
         type: string
-      sub_level:
-        description: "指定要构建的kernel子版本 (留空则构建全部)"
-        required: false
-        type: string
-        default: ""
       build_time:
         description: "自定义构建时间 (可选，N或留空=当前UTC)"
         required: false
@@ -100,6 +95,7 @@ on:
         required: false
         type: boolean
         default: false
+
   workflow_call:
     inputs:
       kernelsu_variant:
@@ -112,10 +108,6 @@ on:
       version:
         required: false
         type: string
-      sub_level:
-        required: false
-        type: string
-        default: ""
       build_time:
         required: false
         type: string
@@ -163,7 +155,7 @@ on:
 
 jobs:
   build-kernels-a15-6-6:
-     name: "6.6.${{ matrix.sub_level }}-${{ matrix.os_patch_level }}"
+    name: "6.6.${{ matrix.sub_level }}-${{ matrix.os_patch_level }}"
     strategy:
       fail-fast: false
       matrix:
@@ -198,50 +190,31 @@ jobs:
             os_patch_level: "2026-04"
           - sub_level: "X"
             os_patch_level: "lts"
-  steps:
-      - name: 检查是否跳过构建
-        id: check
-        run: |
-          if [ -n "${{ inputs.sub_level }}" ] && [ "${{ inputs.sub_level }}" != "${{ matrix.sub_level }}" ]; then
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: 跳过构建
-        if: steps.check.outputs.skip == 'true'
-        run: |
-          echo "跳过构建 6.6.${{ matrix.sub_level }}"
-          exit 0
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      android_version: "android15"
+      kernel_version: "6.6"
+      sub_level: ${{ matrix.sub_level }}
+      os_patch_level: ${{ matrix.os_patch_level }}
+      ksu_variant: ${{ inputs.kernelsu_variant }}
+      ksu_commit: ${{ inputs.kernelsu_commit }}
+      version: ${{ inputs.version || '' }}
+      build_time: ${{ inputs.build_time || '' }}
+      use_zram: ${{ inputs.use_zram }}
+      use_bbg: ${{ inputs.use_bbg }}
+      use_kpm: ${{ inputs.use_kpm }}
+      use_rekernel: ${{ inputs.use_rekernel || false }}
+      cve_2026_43499_patch: ${{ inputs.cve_2026_43499_patch }}
+      supp_op: ${{ inputs.supp_op || false }}
+      enable_susfs: ${{ !inputs.cancel_susfs }}
+      droidspaces: ${{ inputs.droidspaces || 'off' }}
+      droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
+      artifact_upload_mode: ${{ inputs.artifact_upload_mode }}
 
-      - name: 执行构建
-        if: steps.check.outputs.skip == 'false'
-        uses: ./.github/workflows/build.yml
-        secrets: inherit
-        with:
-          android_version: "android15"
-          kernel_version: "6.6"
-          sub_level: ${{ matrix.sub_level }}
-          os_patch_level: ${{ matrix.os_patch_level }}
-          ksu_variant: ${{ inputs.kernelsu_variant }}
-          ksu_commit: ${{ inputs.kernelsu_commit }} 
-          version: ${{ inputs.version || '' }}
-          build_time: ${{ inputs.build_time || '' }}
-          use_zram: ${{ inputs.use_zram }}
-          use_bbg: ${{ inputs.use_bbg }}
-          use_kpm: ${{ inputs.use_kpm }}
-          use_rekernel: ${{ inputs.use_rekernel || false }}
-          cve_2026_43499_patch: ${{ inputs.cve_2026_43499_patch }}
-          supp_op: ${{ inputs.supp_op || false }}
-          enable_susfs: ${{ !inputs.cancel_susfs }}
-          droidspaces: ${{ inputs.droidspaces || 'off' }}
-          droidspaces_ntsync: ${{ inputs.droidspaces_ntsync || false }}
-          artifact_upload_mode: ${{ inputs.artifact_upload_mode }}
-            
-      # 仅在直接触发时运行，从 main.yml 调用时跳过
-        get-ksu-manager:
-          if: ${{ !inputs.called_from_main }}
-          uses: ./.github/workflows/get-manager.yml
-          secrets: inherit
-          with:
-            kernelsu_variant: ${{ inputs.kernelsu_variant }}
+  get-ksu-manager:
+    if: ${{ !inputs.called_from_main }}
+    uses: ./.github/workflows/get-manager.yml
+    secrets: inherit
+    with:
+      kernelsu_variant: ${{ inputs.kernelsu_variant }}
