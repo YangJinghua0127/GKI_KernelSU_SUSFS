@@ -18,7 +18,12 @@ on:
           - SukiSU(40726)
           - SukiSU(40548)
           - ReSukiSU
-        default: ReSukiSU
+        default: Official
+      kernelsu_commit:
+        description: "⚠️ 仅当选择 'Official' 时生效：指定 KernelSU commit hash (留空则使用最新版本)"
+        required: false
+        type: string
+        default: ""
       version:
         description: "自定义版本名 (可选)"
         required: false
@@ -93,6 +98,10 @@ on:
       kernelsu_variant:
         required: true
         type: string
+      kernelsu_commit:
+        required: false
+        type: string
+        default: ""
       version:
         required: false
         type: string
@@ -166,6 +175,7 @@ jobs:
       sub_level: ${{ matrix.sub_level }}
       os_patch_level: ${{ matrix.os_patch_level }}
       ksu_variant: ${{ inputs.kernelsu_variant }}
+      ksu_commit: ${{ inputs.kernelsu_commit }}
       version: ${{ inputs.version || '' }}
       build_time: ${{ inputs.build_time || '' }}
       use_zram: false
