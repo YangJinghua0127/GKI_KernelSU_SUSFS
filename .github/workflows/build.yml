@@ -25,6 +25,11 @@ on:
       ksu_variant:
         required: true
         type: string
+      ksu_commit:  # 新增：指定 KernelSU 的 commit hash
+        required: false
+        type: string
+        description: 'KernelSU commit hash (留空则使用默认分支最新版本)'
+        default: ''  # 默认为空，表示使用分支最新版本
 
       # ==================== 可选配置 ====================
       version:
@@ -455,31 +460,52 @@ jobs:
           case "${{ inputs.ksu_variant }}" in
             "Official")
               echo "添加 KernelSU 官方版..."
-              curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
-
+              KSU_COMMIT="${{ inputs.ksu_commit }}"
+              
+              if [ -z "$KSU_COMMIT" ]; then
+                # 未指定 commit，使用原有方式（完全兼容）
+                curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash $BRANCH
+              else
+                # 指定了 commit，使用 git clone + checkout
+                echo "使用指定 commit: $KSU_COMMIT"
+                git clone https://github.com/tiann/KernelSU.git
+                cd KernelSU
+                git checkout $KSU_COMMIT
+                cd ..
+              fi
+              
+              # 统一处理版本号（原有逻辑，保持不变）
               cd KernelSU
               KSU_GIT_VERSION=$(git rev-list --count HEAD)
               KSU_VERSION=$((20000 + KSU_GIT_VERSION))
               echo "KSU_VERSION=$KSU_VERSION" >> $GITHUB_ENV
-
+              
               if [ -f "kernel/Kbuild" ]; then
                 sed -i "s/DKSU_VERSION=16/DKSU_VERSION=${KSU_VERSION}/" kernel/Kbuild
               fi
               cd ..
               ;;
+              
             "Next")
+              # 完全保持原样，不做任何修改
               echo "添加 KernelSU-Next..."
               curl -LSs "https://raw.githubusercontent.com/KernelSU-Next/KernelSU-Next/refs/heads/dev/kernel/setup.sh" | bash -s dev_susfs
               ;;
+              
             "SukiSU")
+              # 完全保持原样，不做任何修改
               echo "添加 ${{ inputs.ksu_variant }}..."
               curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
               ;;
+              
             "ReSukiSU")
+              # 完全保持原样，不做任何修改
               echo "添加 ReSukiSU..."
               curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash $BRANCH
               ;;
+              
             *)
+              # 完全保持原样，不做任何修改
               if [ -z "$LEGACY_SUKISU_CONFIG" ]; then
                 echo "未知变体: ${{ inputs.ksu_variant }}" >&2
                 exit 1
@@ -488,7 +514,8 @@ jobs:
               curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash $BRANCH
               ;;
           esac
-
+          
+          # 提取最新提交时间（完全保持原样）
           if [ -d "KernelSU/.git" ]; then
             KSU_LATEST_COMMIT_DATE=$(git -C KernelSU log -1 --date=format:'%Y-%m-%d %H:%M:%S %z' --format='%cd')
             echo "KSU_LATEST_COMMIT_DATE=$KSU_LATEST_COMMIT_DATE" >> $GITHUB_ENV
