@@ -43,7 +43,12 @@ on:
           - ReSukiSU
           - Official
           #- Next
-        default: ReSukiSU
+        default: Official
+      kernelsu_commit:
+        description: "⚠️ 仅当选择 'Official' 时生效：指定 KernelSU commit hash (留空则使用最新版本)"
+        type: string
+        default: ""
+        required: false
 
       # ==================== 可选配置 ====================
       version:
